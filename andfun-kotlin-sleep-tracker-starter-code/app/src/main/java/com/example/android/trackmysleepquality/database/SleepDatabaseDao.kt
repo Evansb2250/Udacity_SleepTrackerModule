@@ -26,46 +26,46 @@ import androidx.room.Update
 // needs to be annotatedt with the DAO keyword
 @Dao
 interface SleepDatabaseDao {
+ @Insert
+ suspend fun insert(night: SleepNight)
 
- //need insert annotation and function definition that is called from the code
- @Insert //Room will generate the data needed for this function
- suspend fun insert(night: SleepNight) {
- }   // suspend is used for coroutines which allows us to create Asychronous program fluently.
- // suspend means this function can be blocked or suspended
-// Can only be called within a courotine
+ /**
+  * When updating a row with a value already set in a column,
+  * replaces the old value with the new one.
+  *
+  * @param night new value to write
+  */
+ @Update
+ suspend fun update(night: SleepNight)
 
-
- @Update  //updates a previously entered night instance in the stable
- suspend fun update(night: SleepNight) {
- }
-
-//used to specify a more complex SQL command
-
- @Query("SELECT * from daily_sleep_quality_table WHERE nightId =:key")
+ /**
+  * Selects and returns the row that matches the supplied start time, which is our key.
+  *
+  * @param key startTimeMilli to match
+  */
+ @Query("SELECT * from daily_sleep_quality_table WHERE nightId = :key")
  suspend fun get(key: Long): SleepNight?
 
- /*
- uses the Delete From keyword to remove all entries in the daily_sleep_quality_table
+ /**
+  * Deletes all values from the table.
+  *
+  * This does not delete the table, only its contents.
   */
- @Query("DELETE FROM daily_sleep_quality_table ")
+ @Query("DELETE FROM daily_sleep_quality_table")
  suspend fun clear()
 
-
- /*
- Query to get all the nights
+ /**
+  * Selects and returns all rows in the table,
+  *
+  * sorted by start time in descending order.
   */
  @Query("SELECT * FROM daily_sleep_quality_table ORDER BY nightId DESC")
-  fun getAllNights(): LiveData<List<SleepNight>>
+ fun getAllNights(): LiveData<List<SleepNight>>
 
-
-/*
-gets all the instances of sleep night
-orders it by descending order
-limits for only 1 item to be selected
- */
-  @Query("SELECT * FROM daily_sleep_quality_table ORDER BY nightId DESC LIMIT 1")
-  fun getTonight():SleepNight? // sleepNight is nullable
-
-
+ /**
+  * Selects and returns the latest night.
+  */
+ @Query("SELECT * FROM daily_sleep_quality_table ORDER BY nightId DESC LIMIT 1")
+ suspend fun getTonight(): SleepNight?
 
 }
