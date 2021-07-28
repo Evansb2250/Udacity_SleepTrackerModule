@@ -22,7 +22,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import com.example.android.trackmysleepquality.R
+import com.example.android.trackmysleepquality.database.SleepDatabase
 import com.example.android.trackmysleepquality.databinding.FragmentSleepQualityBinding
 
 /**
@@ -45,7 +49,38 @@ class SleepQualityFragment : Fragment() {
         val binding: FragmentSleepQualityBinding = DataBindingUtil.inflate(
                 inflater, R.layout.fragment_sleep_quality, container, false)
 
+        //Checks if the activity application is null before creating an application object
         val application = requireNotNull(this.activity).application
+
+        // get the instance of the the database and passes the DAO instead of the database
+        val dataSource = SleepDatabase.getInstance(application).sleepDatabaseDao
+
+        // gets the key and arguments that were passed to the SleepQualityFragment
+        val arguments = SleepQualityFragmentArgs.fromBundle(arguments!!)
+
+        //create the factory object
+        val qualityFactory = SleepQualityViewModelFactory(arguments.sleepNightKey, dataSource)
+
+        //instantiate the viewModel
+        val sleepQualityViewModel = ViewModelProvider(this, qualityFactory).get(SleepQualityViewModel::class.java)
+
+        //references binding viewModel with the viewModel
+        binding.sleepQualityViewModel = sleepQualityViewModel
+
+        //sets lifecycle to this fragment
+        binding.lifecycleOwner = this
+
+        sleepQualityViewModel.navigateToSleepTracker.observe(viewLifecycleOwner, Observer { navigate ->
+            navigate?.let { if(navigate == true){
+                findNavController().navigate(SleepQualityFragmentDirections.actionSleepQualityFragmentToSleepTrackerFragment())
+                sleepQualityViewModel.doneNavigating()
+            } }
+
+        })
+
+
+
+
 
         return binding.root
     }

@@ -22,10 +22,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import com.example.android.trackmysleepquality.R
 import com.example.android.trackmysleepquality.database.SleepDatabase
 import com.example.android.trackmysleepquality.databinding.FragmentSleepTrackerBinding
+import com.google.android.material.snackbar.Snackbar
 
 /**
  * A fragment with buttons to record start and end times for sleep, which are saved in
@@ -65,6 +68,29 @@ class SleepTrackerFragment : Fragment() {
         //specifies the current activity as the life cycle owner of the binding.
         //neccessary so that the binding can observe LiveData updates
         binding.lifecycleOwner= this
+
+
+        //Observer object to display the snackBarEvent
+        sleepTrackerViewModel.showSnackBarEvent.observe(viewLifecycleOwner, Observer {
+            if(it == true){
+                Snackbar.make(
+                    requireActivity().findViewById(android.R.id.content),
+                    getString(R.string.cleared_message),
+                    Snackbar.LENGTH_SHORT // How long to display the message.
+                ).show()
+
+                sleepTrackerViewModel.doneShowingSnackBar()
+            }
+        })
+
+        sleepTrackerViewModel.navgiateToSleepQuality.observe(viewLifecycleOwner, Observer { sleepNight ->
+            //Uses the let function to prevent navigation if sleep Night is null
+            sleepNight?.let { findNavController().navigate(SleepTrackerFragmentDirections.actionSleepTrackerFragmentToSleepQualityFragment(sleepNight.nightId))
+                //resets the observer object back null
+                sleepTrackerViewModel.doneNavigating()
+            }
+
+        })
 
 
         return binding.root

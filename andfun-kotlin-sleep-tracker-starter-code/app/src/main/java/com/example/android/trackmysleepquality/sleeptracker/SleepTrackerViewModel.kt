@@ -18,13 +18,12 @@ package com.example.android.trackmysleepquality.sleeptracker
 
 import android.app.Application
 import android.util.Log
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Transformations
+import androidx.lifecycle.*
 import com.example.android.trackmysleepquality.database.SleepDatabaseDao
 import com.example.android.trackmysleepquality.database.SleepNight
 import com.example.android.trackmysleepquality.formatNights
+
+
 import kotlinx.coroutines.launch
 
 /**
@@ -41,10 +40,55 @@ class SleepTrackerViewModel(
     //retrieves a list of all the nights
     private val nights = database.getAllNights()
 
+    //encapsulates the live data, but prevents mutableData from being exposed
+    private val _navgiateToSleepQuality = MutableLiveData<SleepNight>()
+    //Live data has to be val.
+    val navgiateToSleepQuality:LiveData<SleepNight>
+    get() = _navgiateToSleepQuality
+
+
+    //controls the visibility of start button
+    val startButtonVisible = Transformations.map(tonight){
+        it == null
+    }
+
+    //controls the visibility of start button
+    val stopButtonVisible = Transformations.map(tonight){
+        it != null
+    }
+
+
+    //controls the visibility of the clear button
+    val clearButtonVisible = Transformations.map(nights){
+        it?.isNotEmpty()
+    }
+
+
+    //Controls when the snack bar appears
+    private var _showSnackBarEvent = MutableLiveData<Boolean>()
+
+    //live Data variable to display snackBar
+    val showSnackBarEvent:LiveData<Boolean> get() = _showSnackBarEvent
+
+
+    fun doneShowingSnackBar(){
+        _showSnackBarEvent.value = false
+    }
+
+
+
+    //modifies the string is supposed to look
     val nightsString = Transformations.map(nights) { nights ->
         Log.i("testing", "formating nights $nights")
         formatNights(nights, application.resources)
     }
+
+
+    //Reset the _navigateToSleepQuality to null
+    fun doneNavigating(){
+        _navgiateToSleepQuality.value = null
+    }
+
 
 
 
@@ -81,7 +125,7 @@ class SleepTrackerViewModel(
             val newNight = SleepNight()
             //inserts the night into the database
             insert(newNight)
-            Log.i("testing", "on track pressed")
+
 
             //set tonight to the new night that was inserted
             tonight.value = getTonightFromDatabas()
@@ -90,11 +134,19 @@ class SleepTrackerViewModel(
 
     fun onStopTracking() {
         viewModelScope.launch {
-            Log.i("testing", "on stop pressed")
+
             //gets the time it was stopped
             val oldNight = tonight.value?: return@launch
             oldNight.endTimeMilli = System.currentTimeMillis()
+
+
+            //update field with the time the timer was stopped.
             update(oldNight)
+
+
+            // add the sleepNight obj if it isn't null
+            // triggers the observer to notify the GUI
+            _navgiateToSleepQuality.value = oldNight
 
 
 
@@ -110,6 +162,7 @@ class SleepTrackerViewModel(
         viewModelScope.launch {
             clear()
             tonight.value = null
+            _showSnackBarEvent.value = true
         }
     }
 
